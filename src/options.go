@@ -337,6 +337,7 @@ type Options struct {
 	ListenPort   *int
 	ClearOnExit  bool
 	Version      bool
+	With         string
 }
 
 func defaultPreviewOpts(command string) previewOpts {
@@ -405,7 +406,9 @@ func defaultOptions() *Options {
 		BorderLabel:  labelOpts{},
 		PreviewLabel: labelOpts{},
 		ClearOnExit:  true,
-		Version:      false}
+		Version:      false,
+		With:         "",
+	}
 }
 
 func help(code int) {
@@ -1631,6 +1634,8 @@ func parseOptions(opts *Options, allArgs []string) {
 			opts.Nth = splitNth(nextString(allArgs, &i, "nth expression required"))
 		case "--with-nth":
 			opts.WithNth = splitNth(nextString(allArgs, &i, "nth expression required"))
+		case "--with":
+			opts.With = nextString(allArgs, &i, "with expression required")
 		case "-s", "--sort":
 			opts.Sort = optionalNumeric(allArgs, &i, 1)
 		case "+s", "--no-sort":
@@ -1878,6 +1883,8 @@ func parseOptions(opts *Options, allArgs []string) {
 				opts.Nth = splitNth(value)
 			} else if match, value := optString(arg, "--with-nth="); match {
 				opts.WithNth = splitNth(value)
+			} else if match, value := optString(arg, "--with="); match {
+				opts.With = value
 			} else if match, _ := optString(arg, "-s", "--sort="); match {
 				opts.Sort = 1 // Don't care
 			} else if match, value := optString(arg, "-m", "--multi="); match {

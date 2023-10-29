@@ -40,6 +40,12 @@ func Run(opts *Options, version string, revision string) {
 		return util.ToChars(data), nil
 	}
 
+	var formatter *Formatter = nil
+
+	if len(opts.With) > 0 {
+		formatter = NewFormatter(opts.With)
+	}
+
 	var lineAnsiState, prevLineAnsiState *ansiState
 	if opts.Ansi {
 		if opts.Theme.Colored {
@@ -64,17 +70,33 @@ func Run(opts *Options, version string, revision string) {
 	var itemIndex int32
 	header := make([]string, 0, opts.HeaderLines)
 	if len(opts.WithNth) == 0 {
-		chunkList = NewChunkList(func(item *Item, data []byte) bool {
-			if len(header) < opts.HeaderLines {
-				header = append(header, string(data))
-				eventBox.Set(EvtHeader, header)
-				return false
-			}
-			item.text, item.colors = ansiProcessor(data)
-			item.text.Index = itemIndex
-			itemIndex++
-			return true
-		})
+		if len(opts.With) > 0 && formatter != nil {
+			chunkList = NewChunkList(func(item *Item, data []byte) bool {
+				if len(header) < opts.HeaderLines {
+					header = append(header, string(data))
+					eventBox.Set(EvtHeader, header)
+					return false
+				}
+				formattedData := formatter.Format(data)
+				item.text, item.colors = ansiProcessor(formattedData)
+				item.text.Index = itemIndex
+				item.origText = &data
+				itemIndex++
+				return true
+			})
+		} else {
+			chunkList = NewChunkList(func(item *Item, data []byte) bool {
+				if len(header) < opts.HeaderLines {
+					header = append(header, string(data))
+					eventBox.Set(EvtHeader, header)
+					return false
+				}
+				item.text, item.colors = ansiProcessor(data)
+				item.text.Index = itemIndex
+				itemIndex++
+				return true
+			})
+		}
 	} else {
 		chunkList = NewChunkList(func(item *Item, data []byte) bool {
 			tokens := Tokenize(string(data), opts.Delimiter)
